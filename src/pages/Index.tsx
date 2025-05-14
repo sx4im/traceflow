@@ -1,13 +1,16 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import { CodeEditor } from "@/components/CodeEditor";
 import { ControlPanel } from "@/components/ControlPanel";
 import { VariableDisplay } from "@/components/VariableDisplay";
 import { ConsoleOutput } from "@/components/ConsoleOutput";
 import { ExecutionVisualizer } from "@/components/ExecutionVisualizer";
 import { useCodeExecution } from "@/hooks/useCodeExecution";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { withAnimation } from "@/utils/animations";
 
 const DEFAULT_CODE = `// Try a simple function example
 function factorial(n) {
@@ -37,98 +40,118 @@ const Index = () => {
     callStack
   } = useCodeExecution(code);
 
+  // Demo animation on initial load with a longer delay to ensure stability
+  const [isLoaded, setIsLoaded] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoaded(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <header className="bg-white dark:bg-gray-800 shadow-sm p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="container mx-auto">
-          <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">
-            TraceFlow
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Interactive JavaScript Debugger Simulator
-          </p>
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <header className="bg-card shadow-sm border-b p-4 transition-colors z-10 relative">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-primary opacity-100 visible z-10 relative">
+              TraceFlow
+            </h1>
+            <p className="text-sm text-muted-foreground opacity-100 visible z-10 relative">
+              Interactive JavaScript Debugger Simulator
+            </p>
+          </div>
+          <ThemeToggle />
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+      <main className="flex-1 container mx-auto p-4 lg:p-6 transition-all overflow-visible">
+        <div className={`grid grid-cols-1 lg:grid-cols-5 gap-6 ${isLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500`}>
           {/* Code Editor Area */}
-          <div className="lg:col-span-2 flex flex-col gap-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold mb-2">Code Editor</h2>
-              <CodeEditor
-                code={code}
-                onCodeChange={setCode}
-                currentLine={currentLine}
-              />
-            </div>
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            <Card className="overflow-visible h-auto">
+              <CardContent className="p-5">
+                <h2 className="text-lg font-semibold mb-4 opacity-100 visible">Code Editor</h2>
+                <CodeEditor
+                  code={code}
+                  onCodeChange={setCode}
+                  currentLine={currentLine}
+                />
+              </CardContent>
+            </Card>
             
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-              <ControlPanel
-                onExecute={execute}
-                onStep={step}
-                onReset={reset}
-                isRunning={isRunning}
-                isPaused={isPaused}
-                currentStep={currentStep}
-                totalSteps={totalSteps}
-              />
-            </div>
+            <Card className="overflow-visible h-auto">
+              <CardContent className="p-5">
+                <ControlPanel
+                  onExecute={execute}
+                  onStep={step}
+                  onReset={reset}
+                  isRunning={isRunning}
+                  isPaused={isPaused}
+                  currentStep={currentStep}
+                  totalSteps={totalSteps}
+                />
+              </CardContent>
+            </Card>
             
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-              <ConsoleOutput output={consoleOutput} />
-            </div>
+            <Card className="overflow-visible h-auto">
+              <CardContent className="p-5">
+                <ConsoleOutput output={consoleOutput} />
+              </CardContent>
+            </Card>
           </div>
           
           {/* Visualization Area */}
-          <div className="lg:col-span-3 flex flex-col gap-4">
+          <div className="lg:col-span-3 flex flex-col gap-6">
             <Tabs defaultValue="variables" className="w-full">
-              <TabsList className="grid grid-cols-3 mb-2">
-                <TabsTrigger value="variables">Variables</TabsTrigger>
-                <TabsTrigger value="call-stack">Call Stack</TabsTrigger>
-                <TabsTrigger value="visualization">Visualization</TabsTrigger>
+              <TabsList className="grid grid-cols-3 mb-4 w-full">
+                <TabsTrigger value="variables" className="z-10 relative">Variables</TabsTrigger>
+                <TabsTrigger value="call-stack" className="z-10 relative">Call Stack</TabsTrigger>
+                <TabsTrigger value="visualization" className="z-10 relative">Visualization</TabsTrigger>
               </TabsList>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-                <TabsContent value="variables">
-                  <VariableDisplay variables={variables} />
-                </TabsContent>
-                <TabsContent value="call-stack">
-                  <div className="min-h-[300px]">
-                    <h3 className="font-medium mb-2">Call Stack</h3>
-                    <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-md border border-gray-200 dark:border-gray-700">
-                      {callStack.length === 0 ? (
-                        <p className="text-gray-500 italic">Call stack empty</p>
-                      ) : (
-                        <ul className="space-y-1">
-                          {callStack.map((call, index) => (
-                            <li 
-                              key={index} 
-                              className="p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 font-mono text-sm"
-                            >
-                              {call}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+              <Card className="overflow-visible h-auto">
+                <CardContent className="p-5 overflow-visible">
+                  <TabsContent value="variables" className="mt-0 overflow-visible">
+                    <VariableDisplay variables={variables} />
+                  </TabsContent>
+                  <TabsContent value="call-stack" className="mt-0 overflow-visible">
+                    <div className="min-h-[300px]">
+                      <h3 className="font-medium mb-3">Call Stack</h3>
+                      <div className="bg-muted/50 rounded-md border">
+                        {callStack.length === 0 ? (
+                          <div className="p-4 text-center text-muted-foreground italic">
+                            Call stack empty
+                          </div>
+                        ) : (
+                          <ul className="p-2 space-y-2">
+                            {callStack.map((call, index) => (
+                              <li 
+                                key={index} 
+                                className="p-3 bg-card rounded-md border font-mono text-sm"
+                              >
+                                {call}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </TabsContent>
-                <TabsContent value="visualization">
-                  <ExecutionVisualizer
-                    callStack={callStack}
-                    variables={variables}
-                    currentLine={currentLine}
-                  />
-                </TabsContent>
-              </div>
+                  </TabsContent>
+                  <TabsContent value="visualization" className="mt-0 overflow-visible">
+                    <ExecutionVisualizer
+                      callStack={callStack}
+                      variables={variables}
+                      currentLine={currentLine}
+                    />
+                  </TabsContent>
+                </CardContent>
+              </Card>
             </Tabs>
           </div>
         </div>
       </main>
       
-      <footer className="bg-white dark:bg-gray-800 shadow-sm p-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="container mx-auto text-sm text-center text-gray-500 dark:text-gray-400">
-          TraceFlow - Interactive JavaScript Debugger Simulator
+      <footer className="py-6 px-4 border-t transition-colors mt-6 z-0">
+        <div className="container mx-auto text-sm text-center text-muted-foreground">
+          <p>TraceFlow - Interactive JavaScript Debugger Simulator</p>
         </div>
       </footer>
     </div>
